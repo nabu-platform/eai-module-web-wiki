@@ -1,5 +1,8 @@
 package be.nabu.eai.module.web.wiki;
 
+import java.net.URI;
+import java.nio.charset.Charset;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
@@ -13,6 +16,10 @@ public class WikiConfiguration {
 	private CacheProviderArtifact cacheProvider;
 	
 	private Long maxEntrySize, maxTotalSize, cacheTimeout;
+	
+	private Charset charset;
+	
+	private URI source;
 
 	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
 	public CacheProviderArtifact getCacheProvider() {
@@ -46,4 +53,18 @@ public class WikiConfiguration {
 		this.cacheTimeout = cacheTimeout;
 	}
 	
+	public Charset getCharset() {
+		return charset;
+	}
+	public void setCharset(Charset charset) {
+		this.charset = charset;
+	}
+	
+	public URI getSource() {
+		return source;
+	}
+	public void setSource(URI source) {
+		this.source = source;
+	}
+
 }

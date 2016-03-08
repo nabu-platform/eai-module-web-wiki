@@ -1,12 +1,12 @@
 package be.nabu.eai.module.web.wiki;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -34,6 +34,7 @@ import be.nabu.libs.dms.converters.WikiToDXF;
 import be.nabu.libs.dms.converters.WikiToEHTML;
 import be.nabu.libs.events.EventDispatcherFactory;
 import be.nabu.libs.resources.ResourceUtils;
+import be.nabu.libs.resources.api.DetachableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
 import be.nabu.libs.vfs.api.File;
@@ -61,13 +62,16 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 	private FileSystem fileSystem;
 	private SimpleDocumentManager documentManager;
 	
-	private FileSystem getFileSystem() {
+	public FileSystem getFileSystem() {
 		if (fileSystem == null) {
 			synchronized(this) {
 				if (fileSystem == null) {
 					try {
-						ResourceContainer<?> publicDirectory = ResourceUtils.mkdirs(getDirectory(), "public");
-						fileSystem = new ResourceFileSystem(EventDispatcherFactory.getInstance().getEventDispatcher(), publicDirectory, null);
+						ResourceContainer<?> targetDirectory = getConfiguration().getSource() != null ? ResourceUtils.mkdir(getConfiguration().getSource(), null) : ResourceUtils.mkdirs(getDirectory(), "public");
+						if (targetDirectory instanceof DetachableResource) {
+							targetDirectory = (ResourceContainer<?>) ((DetachableResource) targetDirectory).detach();
+						}
+						fileSystem = new ResourceFileSystem(EventDispatcherFactory.getInstance().getEventDispatcher(), targetDirectory, null);
 					}
 					catch (URISyntaxException e) {
 						throw new RuntimeException(e);
@@ -81,7 +85,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		return fileSystem;
 	}
 	
-	private DocumentManager getDocumentManager() {
+	public DocumentManager getDocumentManager() {
 		if (documentManager == null) {
 			synchronized(this) {
 				if (documentManager == null) {
@@ -109,6 +113,15 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 			}
 		}
 		return documentManager;
+	}
+	
+	public Charset getCharset() {
+		try {
+			return getConfiguration().getCharset() != null ? getConfiguration().getCharset() : Charset.forName("UTF-8");
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 	
 	private static String cleanup(String html) {
@@ -195,7 +208,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		// do conversion in memory to avoid overwriting file if it fails
 		File file = getFileSystem().resolve(path);
 		byte [] input = IOUtils.toBytes(IOUtils.wrap(content));
-		input = cleanup(new String(input, "UTF-8")).getBytes("UTF-8");
+		input = cleanup(new String(input, getCharset())).getBytes(getCharset());
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try {
 			getDocumentManager().convert(new MemoryFileFragment(file, input, "new", WikiToEHTML.EDITABLE_HTML), contentType, output, null);
@@ -242,10 +255,10 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		return output.toByteArray();
 	}
 
-	public InputStream getTableOfContents(String path) throws IOException, FormatException {
-		String html = new String(getArticle(path, "text/html"), "UTF-8");
+	public byte[] getTableOfContents(String path) throws IOException, FormatException {
+		String html = new String(getArticle(path, "text/html"), getCharset());
 		String toc = DXFToStandaloneHTML.getTableOfContents(html);
-		return new ByteArrayInputStream(toc.getBytes("UTF-8"));
+		return toc.getBytes(getCharset());
 	}
 	
 	private static class CentralDocumentCacher implements DocumentCacheManager {
