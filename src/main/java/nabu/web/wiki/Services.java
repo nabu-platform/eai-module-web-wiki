@@ -4,6 +4,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.jws.WebParam;
 import javax.jws.WebResult;
@@ -16,6 +18,7 @@ import be.nabu.eai.module.web.wiki.WikiArtifact;
 import be.nabu.libs.dms.MemoryFileFragment;
 import be.nabu.libs.dms.api.FormatException;
 import be.nabu.libs.services.api.ExecutionContext;
+import be.nabu.libs.types.api.KeyValuePair;
 
 @WebService
 public class Services {
@@ -60,20 +63,32 @@ public class Services {
 	}
 	
 	@WebResult(name = "content")
-	public WikiContent read(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType) throws IOException, FormatException {
+	public WikiContent read(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
 		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
-		return new WikiContent(resolved.getArticle(path, contentType), contentType, resolved.getCharset());
+		Map<String, String> map = new HashMap<String, String>();
+		if (properties != null) {
+			for (KeyValuePair property : properties) {
+				map.put(property.getKey(), property.getValue());
+			}
+		}
+		return new WikiContent(resolved.getArticle(path, contentType, map), contentType, resolved.getCharset());
 	}
 	
-	public void write(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType, @WebParam(name = "content") InputStream content) throws IOException, FormatException {
+	public void write(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType, @WebParam(name = "content") InputStream content, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
 		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
-		resolved.setArticle(path, content);
+		Map<String, String> map = new HashMap<String, String>();
+		if (properties != null) {
+			for (KeyValuePair property : properties) {
+				map.put(property.getKey(), property.getValue());
+			}
+		}
+		resolved.setArticle(path, content, map);
 	}
 	
 	/**
@@ -83,10 +98,16 @@ public class Services {
 	 * - we need to reuse the filesystem (you can set up memory if you want for this) 
 	 */
 	@WebResult(name = "converted")
-	public WikiContent convert(@NotNull @WebParam(name = "wikiId") String wikiId, @NotNull @WebParam(name = "contentId") String contentId, @WebParam(name = "content") byte [] content, @WebParam(name = "fromContentType") String fromContentType, @WebParam(name = "toContentType") String toContentType) throws IOException, FormatException {
+	public WikiContent convert(@NotNull @WebParam(name = "wikiId") String wikiId, @NotNull @WebParam(name = "contentId") String contentId, @WebParam(name = "content") byte [] content, @WebParam(name = "fromContentType") String fromContentType, @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
 		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
+		}
+		Map<String, String> map = new HashMap<String, String>();
+		if (properties != null) {
+			for (KeyValuePair property : properties) {
+				map.put(property.getKey(), property.getValue());
+			}
 		}
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		// we add the "tocontentype" as fragment name
@@ -94,7 +115,7 @@ public class Services {
 			new MemoryFileFragment(resolved.getFileSystem().resolve(contentId), content, toContentType, fromContentType), 
 			toContentType,
 			output,
-			new HashMap<String, String>()
+			map
 		);
 		return new WikiContent(output.toByteArray(), toContentType, resolved.getCharset());
 	}

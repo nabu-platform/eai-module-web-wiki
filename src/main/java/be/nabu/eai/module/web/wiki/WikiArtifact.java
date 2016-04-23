@@ -202,7 +202,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		parent.setDirectories(directories);
 	}
 	
-	public void setArticle(String path, InputStream content) throws IOException, FormatException {
+	public void setArticle(String path, InputStream content, Map<String, String> properties) throws IOException, FormatException {
 		// guess the type from the extension
 		String contentType = URLConnection.guessContentTypeFromName(path);
 		if (contentType == null || Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
@@ -214,7 +214,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		input = cleanup(new String(input, getCharset())).getBytes(getCharset());
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try {
-			getDocumentManager().convert(new MemoryFileFragment(file, input, "new", WikiToEHTML.EDITABLE_HTML), contentType, output, null);
+			getDocumentManager().convert(new MemoryFileFragment(file, input, "new", WikiToEHTML.EDITABLE_HTML), contentType, output, properties);
 		}
 		catch(Exception e) {
 			e.printStackTrace();
@@ -231,7 +231,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		}
 	}
 	
-	public byte [] getArticle(String path, String contentType) throws IOException, FormatException {
+	public byte [] getArticle(String path, String contentType, Map<String, String> properties) throws IOException, FormatException {
 		File file = getFileSystem().resolve(path);
 		if (!file.exists()) {
 			return null;
@@ -244,14 +244,20 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		}
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try {
-			Map<String, String> properties = new HashMap<String, String>();
+			if (properties == null) {
+				properties = new HashMap<String, String>();
+			}
 			// slides
-			properties.put("fragment", "p,h2,h3,h4,h5,h6,h7,img,li,blockquote,table");
-			properties.put("mouseWheel", "false");
-			properties.put("downloadPath", getConfiguration().getDownloadPath());
-			properties.put("viewPath", getConfiguration().getViewPath());
-			// standalone
-			properties.put("style", DXFToStandaloneHTML.getAdditionalStyles("slides/custom.css", "slides/tables.css"));
+			if (!properties.containsKey("fragment")) {
+				properties.put("fragment", "p,h2,h3,h4,h5,h6,h7,img,li,blockquote,table");
+			}
+			if (!properties.containsKey("mouseWheel")) {
+				properties.put("mouseWheel", "false");
+			}
+			if (!properties.containsKey("style")) {
+				// standalone
+				properties.put("style", DXFToStandaloneHTML.getAdditionalStyles("slides/custom.css", "slides/tables.css"));
+			}
 			getDocumentManager().convert(file, contentType, output, properties);
 		}
 		catch (Exception e) {
@@ -261,7 +267,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 	}
 
 	public byte[] getTableOfContents(String path) throws IOException, FormatException {
-		String html = new String(getArticle(path, "text/html"), getCharset());
+		String html = new String(getArticle(path, "text/html", null), getCharset());
 		String toc = DXFToStandaloneHTML.getTableOfContents(html);
 		return toc.getBytes(getCharset());
 	}
