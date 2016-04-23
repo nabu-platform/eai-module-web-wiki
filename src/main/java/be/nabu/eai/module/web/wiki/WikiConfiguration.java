@@ -3,7 +3,9 @@ package be.nabu.eai.module.web.wiki;
 import java.net.URI;
 import java.nio.charset.Charset;
 
+import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import be.nabu.eai.api.EnvironmentSpecific;
@@ -11,6 +13,7 @@ import be.nabu.eai.repository.api.CacheProviderArtifact;
 import be.nabu.eai.repository.jaxb.ArtifactXMLAdapter;
 
 @XmlRootElement(name = "wiki")
+@XmlType(propOrder = { "source", "downloadPath", "viewPath", "cacheProvider", "maxEntrySize", "maxTotalSize", "cacheTimeout", "charset" })
 public class WikiConfiguration {
 	
 	private CacheProviderArtifact cacheProvider;
@@ -20,6 +23,8 @@ public class WikiConfiguration {
 	private Charset charset;
 	
 	private URI source;
+	
+	private String downloadPath, viewPath;
 
 	@XmlJavaTypeAdapter(value = ArtifactXMLAdapter.class)
 	public CacheProviderArtifact getCacheProvider() {
@@ -65,6 +70,22 @@ public class WikiConfiguration {
 	}
 	public void setSource(URI source) {
 		this.source = source;
+	}
+	
+	@NotNull
+	public String getDownloadPath() {
+		return downloadPath;
+	}
+	public void setDownloadPath(String downloadPath) {
+		this.downloadPath = downloadPath;
+	}
+	
+	@NotNull
+	public String getViewPath() {
+		return viewPath;
+	}
+	public void setViewPath(String viewPath) {
+		this.viewPath = viewPath;
 	}
 
 }

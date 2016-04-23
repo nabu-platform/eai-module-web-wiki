@@ -13,10 +13,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import nabu.frameworks.datastore.Services;
 import nabu.web.wiki.types.WikiArticle;
 import nabu.web.wiki.types.WikiDirectory;
 import be.nabu.eai.repository.api.Repository;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
+import be.nabu.eai.repository.util.SystemPrincipal;
 import be.nabu.libs.cache.api.Cache;
 import be.nabu.libs.cache.api.CacheEntry;
 import be.nabu.libs.cache.api.ExplorableCache;
@@ -104,6 +106,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 								new LastModifiedTimeoutManager(getConfiguration().getCacheTimeout() == null ? 1000*60*60 : getConfiguration().getCacheTimeout())
 							);
 							documentManager.setCacheManager(new CentralDocumentCacher(cache));
+							documentManager.setDatastore(Services.getAsDatastore(getRepository().newExecutionContext(SystemPrincipal.ROOT)));
 						}
 					}
 					catch (IOException e) {
@@ -245,6 +248,8 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 			// slides
 			properties.put("fragment", "p,h2,h3,h4,h5,h6,h7,img,li,blockquote,table");
 			properties.put("mouseWheel", "false");
+			properties.put("downloadPath", getConfiguration().getDownloadPath());
+			properties.put("viewPath", getConfiguration().getViewPath());
 			// standalone
 			properties.put("style", DXFToStandaloneHTML.getAdditionalStyles("slides/custom.css", "slides/tables.css"));
 			getDocumentManager().convert(file, contentType, output, properties);
