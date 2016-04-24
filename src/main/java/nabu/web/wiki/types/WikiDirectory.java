@@ -2,6 +2,9 @@ package nabu.web.wiki.types;
 
 import java.util.List;
 
+import javax.xml.bind.annotation.XmlRootElement;
+
+@XmlRootElement
 public class WikiDirectory extends WikiEntry {
 	
 	private List<WikiArticle> articles;
