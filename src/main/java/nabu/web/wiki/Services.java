@@ -88,7 +88,7 @@ public class Services {
 				map.put(property.getKey(), property.getValue());
 			}
 		}
-		resolved.setArticle(path, content, map);
+		resolved.setArticle(path, content, map, contentType);
 	}
 	
 	/**

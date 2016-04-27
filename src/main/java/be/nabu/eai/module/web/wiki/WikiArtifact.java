@@ -202,9 +202,11 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		parent.setDirectories(directories);
 	}
 	
-	public void setArticle(String path, InputStream content, Map<String, String> properties) throws IOException, FormatException {
+	public void setArticle(String path, InputStream content, Map<String, String> properties, String contentType) throws IOException, FormatException {
 		// guess the type from the extension
-		String contentType = URLConnection.guessContentTypeFromName(path);
+		if (contentType == null) {
+			contentType = URLConnection.guessContentTypeFromName(path);
+		}
 		if (contentType == null || Resource.CONTENT_TYPE_DIRECTORY.equals(contentType)) {
 			throw new IOException("This content type is unknown or not allowed: " + contentType);
 		}
