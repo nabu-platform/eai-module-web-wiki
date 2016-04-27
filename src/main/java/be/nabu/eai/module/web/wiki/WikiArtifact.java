@@ -106,8 +106,8 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 								new LastModifiedTimeoutManager(getConfiguration().getCacheTimeout() == null ? 1000*60*60 : getConfiguration().getCacheTimeout())
 							);
 							documentManager.setCacheManager(new CentralDocumentCacher(cache));
-							documentManager.setDatastore(Services.getAsDatastore(getRepository().newExecutionContext(SystemPrincipal.ROOT)));
 						}
+						documentManager.setDatastore(Services.getAsDatastore(getRepository().newExecutionContext(SystemPrincipal.ROOT)));
 					}
 					catch (IOException e) {
 						throw new RuntimeException(e);
