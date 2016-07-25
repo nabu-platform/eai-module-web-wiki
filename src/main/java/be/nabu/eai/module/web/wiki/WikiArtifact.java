@@ -267,6 +267,10 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		}
 		return output.toByteArray();
 	}
+	
+	public File getFile(String path) throws IOException {
+		return getFileSystem().resolve(path);
+	}
 
 	public byte[] getTableOfContents(String path) throws IOException, FormatException {
 		String html = new String(getArticle(path, "text/html", null), getCharset());

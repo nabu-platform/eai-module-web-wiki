@@ -74,7 +74,11 @@ public class Services {
 				map.put(property.getKey(), property.getValue());
 			}
 		}
-		return new WikiContent(resolved.getArticle(path, contentType, map), contentType, resolved.getCharset());
+		byte[] article = resolved.getArticle(path, contentType, map);
+		if (contentType == null) {
+			contentType = resolved.getFile(path).getContentType();
+		}
+		return new WikiContent(article, contentType, resolved.getCharset());
 	}
 	
 	public void write(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType, @WebParam(name = "content") InputStream content, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
