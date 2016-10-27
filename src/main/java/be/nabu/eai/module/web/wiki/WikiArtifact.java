@@ -12,6 +12,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import nabu.frameworks.datastore.Services;
 import nabu.web.wiki.types.WikiArticle;
@@ -39,6 +41,8 @@ import be.nabu.libs.resources.ResourceUtils;
 import be.nabu.libs.resources.api.DetachableResource;
 import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.resources.api.ResourceContainer;
+import be.nabu.libs.types.api.KeyValuePair;
+import be.nabu.libs.types.utils.KeyValuePairImpl;
 import be.nabu.libs.vfs.api.File;
 import be.nabu.libs.vfs.api.FileSystem;
 import be.nabu.libs.vfs.resources.impl.ResourceFileSystem;
@@ -194,6 +198,24 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 					article.setSize(child.getSize());
 					article.setLastModified(child.getLastModified());
 					article.setPath(path);
+					// extract metadata
+					if ("text/x-markdown".equals(child.getContentType())) {
+						List<KeyValuePair> meta = new ArrayList<KeyValuePair>();
+						try {
+							byte[] content = getArticle(path, "text/x-markdown", null);
+							Pattern pattern = Pattern.compile("(?m)^[\\s]*@([^\\s]+)[\\s]*(.*)$");
+							// we only want the metadata at the top
+							Matcher matcher = pattern.matcher(new String(content, "UTF-8").split("\n\n")[0]);
+							while (matcher.find()) {
+								meta.add(new KeyValuePairImpl(matcher.group(1), matcher.groupCount() == 1 ? "true" : matcher.group(2)));
+							}
+						}
+						catch (FormatException e) {
+							// could not load entry
+							e.printStackTrace();
+						}
+						article.setMeta(meta);
+					}
 					articles.add(article);
 				}
 			}
