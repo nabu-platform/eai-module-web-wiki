@@ -3,6 +3,7 @@ package nabu.web.wiki;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,6 +18,7 @@ import nabu.web.wiki.types.WikiDirectory;
 import be.nabu.eai.module.web.wiki.WikiArtifact;
 import be.nabu.libs.dms.MemoryFileFragment;
 import be.nabu.libs.dms.api.FormatException;
+import be.nabu.libs.dms.utils.SimpleDocumentManager;
 import be.nabu.libs.services.api.ExecutionContext;
 import be.nabu.libs.types.api.KeyValuePair;
 
@@ -122,5 +124,23 @@ public class Services {
 			map
 		);
 		return new WikiContent(output.toByteArray(), toContentType, resolved.getCharset());
+	}
+
+	@WebResult(name = "transformed")
+	public WikiContent transform(@WebParam(name = "content") byte [] content, @NotNull @WebParam(name = "fromContentType") String fromContentType, @NotNull @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
+		if (content == null) {
+			return null;
+		}
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+		Map<String, String> map = new HashMap<String, String>();
+		if (properties != null) {
+			for (KeyValuePair property : properties) {
+				map.put(property.getKey(), property.getValue());
+			}
+		}
+		new SimpleDocumentManager().convert(
+			new MemoryFileFragment(null, content, toContentType, fromContentType),
+			toContentType, output, map);
+		return new WikiContent(output.toByteArray(), toContentType, Charset.defaultCharset());
 	}
 }
