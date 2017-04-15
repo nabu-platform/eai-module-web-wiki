@@ -62,6 +62,7 @@ public class WikiConfiguration {
 		this.charset = charset;
 	}
 	
+	@EnvironmentSpecific
 	public URI getSource() {
 		return source;
 	}
