@@ -16,6 +16,8 @@ import javax.validation.constraints.NotNull;
 import nabu.web.wiki.types.WikiContent;
 import nabu.web.wiki.types.WikiDirectory;
 import be.nabu.eai.module.web.wiki.WikiArtifact;
+import be.nabu.eai.repository.EAIResourceRepository;
+import be.nabu.eai.repository.util.SystemPrincipal;
 import be.nabu.libs.dms.MemoryFileFragment;
 import be.nabu.libs.dms.api.FormatException;
 import be.nabu.libs.dms.utils.SimpleDocumentManager;
@@ -138,7 +140,9 @@ public class Services {
 				map.put(property.getKey(), property.getValue());
 			}
 		}
-		new SimpleDocumentManager().convert(
+		SimpleDocumentManager simpleDocumentManager = new SimpleDocumentManager();
+		simpleDocumentManager.setDatastore(nabu.frameworks.datastore.Services.getAsDatastore(EAIResourceRepository.getInstance().newExecutionContext(SystemPrincipal.ROOT)));
+		simpleDocumentManager.convert(
 			new MemoryFileFragment(null, content, toContentType, fromContentType),
 			toContentType, output, map);
 		return new WikiContent(output.toByteArray(), toContentType, Charset.defaultCharset());
