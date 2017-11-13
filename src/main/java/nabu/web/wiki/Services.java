@@ -23,6 +23,7 @@ import be.nabu.libs.dms.api.FormatException;
 import be.nabu.libs.dms.utils.SimpleDocumentManager;
 import be.nabu.libs.services.api.ExecutionContext;
 import be.nabu.libs.types.api.KeyValuePair;
+import be.nabu.utils.io.IOUtils;
 
 @WebService
 public class Services {
@@ -106,7 +107,7 @@ public class Services {
 	 * - we need to reuse the filesystem (you can set up memory if you want for this) 
 	 */
 	@WebResult(name = "converted")
-	public WikiContent convert(@NotNull @WebParam(name = "wikiId") String wikiId, @NotNull @WebParam(name = "contentId") String contentId, @WebParam(name = "content") byte [] content, @WebParam(name = "fromContentType") String fromContentType, @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
+	public WikiContent convert(@NotNull @WebParam(name = "wikiId") String wikiId, @NotNull @WebParam(name = "contentId") String contentId, @WebParam(name = "content") InputStream content, @WebParam(name = "fromContentType") String fromContentType, @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
 		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
@@ -120,7 +121,7 @@ public class Services {
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		// we add the "tocontentype" as fragment name
 		resolved.getDocumentManager().convert(
-			new MemoryFileFragment(resolved.getFileSystem().resolve(contentId), content, toContentType, fromContentType), 
+			new MemoryFileFragment(resolved.getFileSystem().resolve(contentId), IOUtils.toBytes(IOUtils.wrap(content)), toContentType, fromContentType), 
 			toContentType,
 			output,
 			map
@@ -129,7 +130,7 @@ public class Services {
 	}
 
 	@WebResult(name = "transformed")
-	public WikiContent transform(@WebParam(name = "content") byte [] content, @NotNull @WebParam(name = "fromContentType") String fromContentType, @NotNull @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
+	public WikiContent transform(@WebParam(name = "content") InputStream content, @NotNull @WebParam(name = "fromContentType") String fromContentType, @NotNull @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
 		if (content == null) {
 			return null;
 		}
@@ -143,7 +144,7 @@ public class Services {
 		SimpleDocumentManager simpleDocumentManager = new SimpleDocumentManager();
 		simpleDocumentManager.setDatastore(nabu.frameworks.datastore.Services.getAsDatastore(EAIResourceRepository.getInstance().newExecutionContext(SystemPrincipal.ROOT)));
 		simpleDocumentManager.convert(
-			new MemoryFileFragment(null, content, toContentType, fromContentType),
+			new MemoryFileFragment(null, IOUtils.toBytes(IOUtils.wrap(content)), toContentType, fromContentType),
 			toContentType, output, map);
 		return new WikiContent(output.toByteArray(), toContentType, Charset.defaultCharset());
 	}
