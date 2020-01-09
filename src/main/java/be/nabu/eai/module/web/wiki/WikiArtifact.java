@@ -8,8 +8,10 @@ import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -215,6 +217,16 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 							e.printStackTrace();
 						}
 						article.setMeta(meta);
+					}
+					if (article.getMeta() != null) {
+						Iterator<KeyValuePair> iterator = article.getMeta().iterator();
+						while (iterator.hasNext()) {
+							KeyValuePair pair = iterator.next();
+							if ("tags".equals(pair.getKey()) && pair.getValue() != null) {
+								article.setTags(Arrays.asList(pair.getValue().split("[\\s]*,[\\s]*")));
+								iterator.remove();
+							}
+						}
 					}
 					articles.add(article);
 				}
