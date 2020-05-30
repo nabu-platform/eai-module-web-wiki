@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -13,14 +14,17 @@ import javax.jws.WebResult;
 import javax.jws.WebService;
 import javax.validation.constraints.NotNull;
 
+import nabu.web.wiki.types.WikiArticle;
 import nabu.web.wiki.types.WikiContent;
 import nabu.web.wiki.types.WikiDirectory;
+import nabu.web.wiki.types.WikiGroup;
 import be.nabu.eai.module.web.wiki.WikiArtifact;
 import be.nabu.eai.repository.EAIResourceRepository;
 import be.nabu.eai.repository.util.SystemPrincipal;
 import be.nabu.libs.dms.MemoryFileFragment;
 import be.nabu.libs.dms.api.FormatException;
 import be.nabu.libs.dms.utils.SimpleDocumentManager;
+import be.nabu.libs.resources.api.Resource;
 import be.nabu.libs.services.api.ExecutionContext;
 import be.nabu.libs.types.api.KeyValuePair;
 import be.nabu.utils.io.IOUtils;
@@ -30,8 +34,55 @@ public class Services {
 	
 	private ExecutionContext context;
 	
+	@WebResult(name = "groups")
+	public List<WikiGroup> group(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "key") String key) throws IOException {
+		WikiDirectory list = list(wikiId, path, recursive, false, false);
+		Map<String, List<WikiArticle>> grouped = new HashMap<String, List<WikiArticle>>();
+		group(list, grouped, key);
+		List<WikiGroup> groups = new ArrayList<WikiGroup>();
+		for (String single : grouped.keySet()) {
+			WikiGroup group = new WikiGroup();
+			group.setKey(single);
+			group.setArticles(grouped.get(single));
+			groups.add(group);
+		}
+		return groups;
+	}
+	
+	private void group(WikiDirectory directory, Map<String, List<WikiArticle>> grouped, String key) {
+		if (directory != null && directory.getArticles() != null) {
+			for (WikiArticle article : directory.getArticles()) {
+				if (key == null || key.equals("tag") || key.equals("tags")) {
+					if (article.getTags() != null) {
+						for (String tag : article.getTags()) {
+							if (!grouped.containsKey(tag)) {
+								grouped.put(tag, new ArrayList<WikiArticle>());
+							}
+							grouped.get(tag).add(article);
+						}
+					}
+				}
+				else if (article.getMeta() != null) {
+					for (KeyValuePair pair : article.getMeta()) {
+						if (key.equals(pair.getKey())) {
+							if (!grouped.containsKey(pair.getValue())) {
+								grouped.put(pair.getValue(), new ArrayList<WikiArticle>());
+							}
+							grouped.get(pair.getValue()).add(article);
+						}
+					}
+				}
+			}
+		}
+		if (directory != null && directory.getDirectories() != null) {
+			for (WikiDirectory child : directory.getDirectories()) {
+				group(child, grouped, key);
+			}
+		}
+	}
+	
 	@WebResult(name = "listing")
-	public WikiDirectory list(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "recursive") Boolean recursive) throws IOException {
+	public WikiDirectory list(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "flatten") Boolean flatten, @WebParam(name = "includeContent") Boolean includeContent) throws IOException {
 		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
@@ -39,7 +90,29 @@ public class Services {
 		if (recursive == null) {
 			recursive = false;
 		}
-		return resolved.list(path, recursive);
+		WikiDirectory list = resolved.list(path, recursive, includeContent != null && includeContent);
+		if (flatten != null && flatten) {
+			List<WikiArticle> articles = new ArrayList<WikiArticle>();
+			flatten(list, articles);
+			WikiDirectory newList = new WikiDirectory();
+			newList.setContentType(Resource.CONTENT_TYPE_DIRECTORY);
+			newList.setName("$flattened");
+			newList.setPath(list.getPath());
+			newList.setArticles(articles);
+			list = newList;
+		}
+		return list;
+	}
+	
+	private void flatten(WikiDirectory parent, List<WikiArticle> articles) {
+		if (parent.getArticles() != null) {
+			articles.addAll(parent.getArticles());
+		}
+		if (parent.getDirectories() != null) {
+			for (WikiDirectory child : parent.getDirectories()) {
+				flatten(child, articles);
+			}
+		}
 	}
 	
 	public void create(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path) throws IOException {

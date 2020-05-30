@@ -137,7 +137,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		return html.replace("<br>", "<br/>").replace("<hr>", "<hr/>");
 	}
 	
-	public WikiDirectory list(String path, boolean recursive) throws IOException {
+	public WikiDirectory list(String path, boolean recursive, boolean includeContent) throws IOException {
 		WikiDirectory listing = new WikiDirectory();
 		listing.setContentType(Resource.CONTENT_TYPE_DIRECTORY);
 		File root;
@@ -154,7 +154,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 			}
 			listing.setName(root.getName());
 		}
-		loadListing(listing, root, recursive);
+		loadListing(listing, root, recursive, includeContent);
 		return listing;
 	}
 	
@@ -172,7 +172,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		}
 	}
 	
-	private void loadListing(WikiDirectory parent, File file, boolean recursive) throws IOException {
+	private void loadListing(WikiDirectory parent, File file, boolean recursive, boolean includeContent) throws IOException {
 		List<WikiDirectory> directories = new ArrayList<WikiDirectory>();
 		List<WikiArticle> articles = new ArrayList<>();
 		for (File child : file) {
@@ -189,7 +189,7 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 					directory.setName(child.getName());
 					directory.setPath(path);
 					if (recursive) {
-						loadListing(directory, child, recursive);
+						loadListing(directory, child, recursive, includeContent);
 					}
 					directories.add(directory);
 				}
@@ -211,6 +211,9 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 							while (matcher.find()) {
 								meta.add(new KeyValuePairImpl(matcher.group(1), matcher.groupCount() == 1 ? "true" : matcher.group(2)));
 							}
+							if (includeContent) {
+								article.setContent(content);
+							}
 						}
 						catch (FormatException e) {
 							// could not load entry
@@ -226,6 +229,14 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 								article.setTags(Arrays.asList(pair.getValue().split("[\\s]*,[\\s]*")));
 								iterator.remove();
 							}
+						}
+					}
+					if (includeContent && article.getContent() == null) {
+						try {
+							article.setContent(getArticle(path, child.getContentType(), null));
+						}
+						catch (Exception e) {
+							e.printStackTrace();
 						}
 					}
 					articles.add(article);

@@ -11,6 +11,7 @@ public class WikiArticle extends WikiEntry {
 	private List<String> tags;
 	private Date lastModified;
 	private List<KeyValuePair> meta;
+	private byte [] content;
 	
 	public long getSize() {
 		return size;
@@ -37,5 +38,11 @@ public class WikiArticle extends WikiEntry {
 	}
 	public void setMeta(List<KeyValuePair> meta) {
 		this.meta = meta;
+	}
+	public byte[] getContent() {
+		return content;
+	}
+	public void setContent(byte[] content) {
+		this.content = content;
 	}
 }
