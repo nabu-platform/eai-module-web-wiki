@@ -18,6 +18,7 @@ import nabu.web.wiki.types.WikiArticle;
 import nabu.web.wiki.types.WikiContent;
 import nabu.web.wiki.types.WikiDirectory;
 import nabu.web.wiki.types.WikiGroup;
+import be.nabu.eai.module.web.wiki.RepositoryDocumentation;
 import be.nabu.eai.module.web.wiki.WikiArtifact;
 import be.nabu.eai.repository.EAIResourceRepository;
 import be.nabu.eai.repository.util.SystemPrincipal;
@@ -83,7 +84,7 @@ public class Services {
 	
 	@WebResult(name = "listing")
 	public WikiDirectory list(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "recursive") Boolean recursive, @WebParam(name = "flatten") Boolean flatten, @WebParam(name = "includeContent") Boolean includeContent) throws IOException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
@@ -103,6 +104,10 @@ public class Services {
 		}
 		return list;
 	}
+
+	private WikiArtifact resolve(String wikiId) {
+		return "$internal".equals(wikiId) ? RepositoryDocumentation.getInternal().getWiki() : context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+	}
 	
 	private void flatten(WikiDirectory parent, List<WikiArticle> articles) {
 		if (parent.getArticles() != null) {
@@ -116,7 +121,7 @@ public class Services {
 	}
 	
 	public void create(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path) throws IOException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
@@ -124,7 +129,7 @@ public class Services {
 	}
 	
 	public void delete(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path) throws IOException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
@@ -133,7 +138,7 @@ public class Services {
 	
 	@WebResult(name = "tableOfContents")
 	public WikiContent tableOfContents(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path) throws IOException, FormatException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
@@ -142,7 +147,7 @@ public class Services {
 	
 	@WebResult(name = "content")
 	public WikiContent read(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
@@ -160,7 +165,7 @@ public class Services {
 	}
 	
 	public void write(@NotNull @WebParam(name = "wikiId") String wikiId, @WebParam(name = "path") String path, @WebParam(name = "contentType") String contentType, @WebParam(name = "content") InputStream content, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}
@@ -181,7 +186,7 @@ public class Services {
 	 */
 	@WebResult(name = "converted")
 	public WikiContent convert(@NotNull @WebParam(name = "wikiId") String wikiId, @NotNull @WebParam(name = "contentId") String contentId, @WebParam(name = "content") InputStream content, @WebParam(name = "fromContentType") String fromContentType, @WebParam(name = "toContentType") String toContentType, @WebParam(name = "properties") List<KeyValuePair> properties) throws IOException, FormatException {
-		WikiArtifact resolved = context.getServiceContext().getResolver(WikiArtifact.class).resolve(wikiId);
+		WikiArtifact resolved = resolve(wikiId);
 		if (resolved == null) {
 			throw new IllegalArgumentException("Can not find wiki: " + wikiId);
 		}

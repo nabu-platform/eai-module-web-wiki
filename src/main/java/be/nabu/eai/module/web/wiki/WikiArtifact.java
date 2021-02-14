@@ -20,7 +20,9 @@ import java.util.regex.Pattern;
 import nabu.frameworks.datastore.Services;
 import nabu.web.wiki.types.WikiArticle;
 import nabu.web.wiki.types.WikiDirectory;
+import be.nabu.eai.repository.EAIResourceRepository;
 import be.nabu.eai.repository.api.Repository;
+import be.nabu.eai.repository.api.Templater;
 import be.nabu.eai.repository.artifacts.jaxb.JAXBArtifact;
 import be.nabu.eai.repository.util.SystemPrincipal;
 import be.nabu.libs.cache.api.Cache;
@@ -69,13 +71,19 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 	
 	private FileSystem fileSystem;
 	private SimpleDocumentManager documentManager;
-	
+
+	public void setFileSystem(FileSystem fileSystem) {
+		this.fileSystem = fileSystem;
+	}
+
 	public FileSystem getFileSystem() {
 		if (fileSystem == null) {
 			synchronized(this) {
 				if (fileSystem == null) {
 					try {
-						ResourceContainer<?> targetDirectory = getConfiguration().getSource() != null ? ResourceUtils.mkdir(getConfiguration().getSource(), null) : ResourceUtils.mkdirs(getDirectory(), "public");
+						ResourceContainer<?> targetDirectory = getConfiguration().getSource() != null 
+							? ("$internal".equals(getConfig().getSource().toString()) ? RepositoryDocumentation.getInternal().getRoot() : ResourceUtils.mkdir(getConfiguration().getSource(), null)) 
+							: ResourceUtils.mkdirs(getDirectory(), "public");
 						if (targetDirectory instanceof DetachableResource) {
 							targetDirectory = (ResourceContainer<?>) ((DetachableResource) targetDirectory).detach();
 						}
@@ -114,6 +122,15 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 							documentManager.setCacheManager(new CentralDocumentCacher(cache));
 						}
 						documentManager.setDatastore(Services.getAsDatastore(getRepository().newExecutionContext(SystemPrincipal.ROOT)));
+						
+						for (Templater templater : EAIResourceRepository.getInstance().getTemplaters()) {
+							documentManager.getTemplaters().add(new be.nabu.libs.dms.api.Templater() {
+								@Override
+								public String template(String content) {
+									return templater.template(content);
+								}
+							});
+						}
 					}
 					catch (IOException e) {
 						throw new RuntimeException(e);
@@ -288,6 +305,10 @@ public class WikiArtifact extends JAXBArtifact<WikiConfiguration> {
 		}
 		if (contentType == null) {
 			contentType = file.getContentType();
+		}
+		// if we have no known content type, we just use the original content
+		if (file.getContentType() == null || contentType == null) {
+			return IOUtils.toBytes(IOUtils.wrap(file.getInputStream()));
 		}
 		ByteArrayOutputStream output = new ByteArrayOutputStream();
 		try {
