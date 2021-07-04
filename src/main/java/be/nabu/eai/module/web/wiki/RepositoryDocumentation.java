@@ -61,10 +61,6 @@ public class RepositoryDocumentation {
 			ResourceContainer<?> documentation = protectedFolder == null ? null : (ResourceContainer<?>) protectedFolder.getChild("documentation");
 			if (documentation != null) {
 				for (Resource child : documentation) {
-					// the folder "attachments" is reserved to store...attachments
-					if (child.getName().equals("attachments")) {
-						continue;
-					}
 					root.addChild(child.getName(), child);
 				}
 			}
