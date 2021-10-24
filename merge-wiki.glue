@@ -1,0 +1,25 @@
+result = xml.objectify(file.read("wiki.xml"))
+
+tag("Wiki")
+
+result/source = parameter(
+	name: "source",
+	category: "Basic",
+	title: null,
+	description: "The source to use",
+	type: null,
+	encrypted: false,
+	optional: true,
+	raw: result/source)/current
+	
+result/charset = parameter(
+	name: "charset",
+	category: "Basic",
+	title: null,
+	description: "The charset that is used to communicate with the server",
+	type: null,
+	encrypted: false,
+	optional: true,
+	raw: result/charset)/current
+	
+file.write("wiki.xml", xml.stringify(result))
